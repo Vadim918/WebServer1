@@ -1,35 +1,42 @@
 ﻿using System;
-using System.Collections.Generic;
+using System.Collections.Specialized;
 using System.IO;
-using System.Linq;
 using System.Net;
 using System.Text;
-using System.Threading.Tasks;
+
 
 namespace WebServer
 {
     class Vote
     {
-        public void Post(HttpListener listener, HttpListenerRequest req)
+        public string Post(HttpListenerRequest request,HttpListenerResponse response)
         {
-            if (req.HttpMethod == "POST")
+            string pairs = "";
+            if (request.HttpMethod == "GET")
             {
-                HttpListenerContext context = listener.GetContext();
-                HttpListenerRequest request = context.Request;
-              
-
-                Stream body = request.InputStream;
-                Encoding encoding = request.ContentEncoding;
-               StreamReader reader = new System.IO.StreamReader(body, encoding);
-
-                Console.WriteLine("Start of client data:");
-                // Convert the data to a string and display it on the console.
-                string s = reader.ReadToEnd();
-                Console.WriteLine(s);
-                Console.WriteLine("End of client data:");
-                body.Close();
-                reader.Close();
+                using (StreamReader fstream = new StreamReader(@"vote.html"))
+                {
+                    string content = fstream.ReadToEnd();
+                    byte[] buffer = Encoding.UTF8.GetBytes(content);
+                    response.ContentLength64 = buffer.Length;
+                    Stream output = response.OutputStream;
+                    output.Write(buffer, 0, buffer.Length);
+                    output.Close();
+                }
             }
+            else
+            {
+                var stream = request.InputStream;              
+                var enc = Encoding.UTF8;
+                using (var reader = new StreamReader(stream, enc))
+                    pairs = reader.ReadToEnd();
+                pairs = pairs.Remove(0, 5);
+                int ind = pairs.Length - 10;
+                pairs = pairs.Remove(ind);    
+            }
+            Console.WriteLine(pairs);
+            return pairs;
         }
+
     }
 }

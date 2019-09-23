@@ -1,11 +1,8 @@
 ﻿using Newtonsoft.Json;
 using System;
-using System.Collections.Generic;
 using System.IO;
-using System.Linq;
 using System.Net;
-using System.Text;
-using System.Threading.Tasks;
+
 
 namespace WebServer
 {
@@ -16,7 +13,7 @@ namespace WebServer
             HttpListener listener = new HttpListener();
             string index = "http://*:8881/";
             listener.Prefixes.Add(index);
-            var json = JsonData.DataObject();
+            string user = "";            
             Vote vote = new Vote();
 
             while (true)
@@ -30,10 +27,18 @@ namespace WebServer
 
                 if (request.RawUrl.Contains("/participants.html"))
                 {
-                    string create = JsonConvert.SerializeObject(json);
-                    File.WriteAllText(@"participants.json", create);
-                    create = File.ReadAllText(@"participants.json");
-                    JsonData resultJson = JsonConvert.DeserializeObject<JsonData>(create);
+                    var json = File.Exists("participants.json") ? JsonConvert.DeserializeObject<JsonData>
+                        (File.ReadAllText("participants.json")) : new JsonData
+                        {
+
+                        };
+
+                    if (user != "")
+                    {
+                     json.Users.Add(user);
+                    }                                     
+                    File.WriteAllText(@"participants.json",JsonConvert.SerializeObject(json));                  
+                    JsonData resultJson = JsonConvert.DeserializeObject<JsonData>(File.ReadAllText(@"participants.json"));
                     string content = resultJson.ToString();
                     byte[] buffer = System.Text.Encoding.Default.GetBytes(content);
                     response.ContentLength64 = buffer.Length;
@@ -43,16 +48,7 @@ namespace WebServer
                 }
                 else if (request.RawUrl.Contains("/vote.html"))
                 {
-                    using (StreamReader fstream = new StreamReader(@"vote.html"))
-                    {
-                        string content = fstream.ReadToEnd();
-                        byte[] buffer = System.Text.Encoding.UTF8.GetBytes(content);
-                        response.ContentLength64 = buffer.Length;
-                        Stream output = response.OutputStream;
-                        output.Write(buffer, 0, buffer.Length);
-                        vote.Post(listener, request);
-                        output.Close();
-                    }
+                   user = vote.Post(request,response);     
                 }
                 else
                 {
