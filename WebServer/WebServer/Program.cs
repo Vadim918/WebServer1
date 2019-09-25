@@ -18,6 +18,12 @@ namespace WebServer
 
             while (true)
             {
+                var json = File.Exists("participants.json") ? JsonConvert.DeserializeObject<JsonData>
+                       (File.ReadAllText("participants.json")) : new JsonData
+                       {
+
+                       };
+
                 Console.WriteLine("Ожидание подключений...");
                 listener.Start();
 
@@ -26,18 +32,7 @@ namespace WebServer
                 HttpListenerResponse response = context.Response;
 
                 if (request.RawUrl.Contains("/participants.html"))
-                {
-                    var json = File.Exists("participants.json") ? JsonConvert.DeserializeObject<JsonData>
-                        (File.ReadAllText("participants.json")) : new JsonData
-                        {
-
-                        };
-
-                    if (user != "")
-                    {
-                     json.Users.Add(user);
-                    }                                     
-                    File.WriteAllText(@"participants.json",JsonConvert.SerializeObject(json));                  
+                {                   
                     JsonData resultJson = JsonConvert.DeserializeObject<JsonData>(File.ReadAllText(@"participants.json"));
                     string content = resultJson.ToString();
                     byte[] buffer = System.Text.Encoding.Default.GetBytes(content);
@@ -48,7 +43,13 @@ namespace WebServer
                 }
                 else if (request.RawUrl.Contains("/vote.html"))
                 {
-                   user = vote.Post(request,response);     
+                    user = vote.Post(request, response);
+                    if (request.HttpMethod == "POST")
+                    {
+                        json.Users.Add(user);
+                        File.WriteAllText(@"participants.json", JsonConvert.SerializeObject(json));
+                    }
+
                 }
                 else
                 {
